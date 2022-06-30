@@ -6,7 +6,7 @@ GOGET = $(GOCMD) get
 GOMOD = $(GOCMD) mod
 GOFMT = $(GOCMD) fmt
 GOVET = $(GOCMD) vet
-PACKAGENAME=iiif-ingest
+PACKAGENAME=iiif-split-ingest
 BINNAME=$(PACKAGENAME)
 
 build: darwin 
