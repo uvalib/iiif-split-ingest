@@ -46,23 +46,28 @@ func deleteS3File(workerId int, s3Svc uva_s3.UvaS3, bucket string, key string) e
 }
 
 // generate the names of the conversion and target files
-func generateFilenames(workerId int, config ServiceConfig, inputName string) (string, string) {
+func generateFilenames(workerId int, config ServiceConfig, downloadName string, inputName string) (string, string) {
 
 	// split into interesting components
-	dirName := path.Dir(inputName)
-	baseName := path.Base(inputName)
-	fileExt := path.Ext(baseName)
-	baseNoExt := strings.TrimSuffix(baseName, fileExt)
+	inputDirName := path.Dir(inputName)
+	inputBaseName := path.Base(inputName)
+	inputFileExt := path.Ext(inputBaseName)
+	inputBaseNoExt := strings.TrimSuffix(inputBaseName, inputFileExt)
 
-	// this is a special case where we remove a leading character from the identifier to make the directory name
-	id := baseNoExt
-	if isLetter(id[0]) == true {
+	// we use the original download name for the directory in some cases
+	downloadBaseName := path.Base(downloadName)
+	downloadFileExt := path.Ext(downloadBaseName)
+	downloadBaseNoExt := strings.TrimSuffix(downloadBaseName, downloadFileExt)
+
+	// this is a special case where we remove a leading character from the identifier to make the partitioned directory name
+	id := downloadBaseNoExt
+	if config.PartitionOutputDir == true && isLetter(id[0]) == true {
 		id = id[1:]
 	}
 
 	// generate new components
-	convertName := fmt.Sprintf("%s/%s.%s", dirName, baseNoExt, config.ConvertSuffix)
-	outputName := fmt.Sprintf("%s/%s/%s.%s", config.ImageOutputRoot, outputDirName(workerId, config, id), baseNoExt, config.ConvertSuffix)
+	convertName := fmt.Sprintf("%s/%s.%s", inputDirName, inputBaseNoExt, config.ConvertSuffix)
+	outputName := fmt.Sprintf("%s/%s/%s.%s", config.ImageOutputRoot, outputDirName(workerId, config, id), inputBaseNoExt, config.ConvertSuffix)
 	return convertName, outputName
 }
 
@@ -140,6 +145,28 @@ func copyFile(workerId int, oldLocation string, newLocation string) error {
 	}
 
 	return nil
+}
+
+func listFiles(workerId int, directory string, prefix string, suffix string) ([]string, error) {
+
+	files, err := ioutil.ReadDir(directory)
+	if err != nil {
+		log.Printf("[worker %d] ERROR: listing files in '%s' (%s)", workerId, directory, err.Error())
+		return nil, err
+	}
+
+	// see if we found anything
+	filesFound := make([]string, 0)
+	for _, f := range files {
+		if f.IsDir() == false {
+			if strings.HasPrefix(f.Name(), prefix) == true && strings.HasSuffix(f.Name(), suffix) == true {
+				log.Printf("[worker %d] DEBUG: found '%s'", workerId, f.Name())
+				filesFound = append(filesFound, fmt.Sprintf("%s/%s", directory, f.Name()))
+			}
+		}
+	}
+
+	return filesFound, nil
 }
 
 func fileExists(filename string) bool {
