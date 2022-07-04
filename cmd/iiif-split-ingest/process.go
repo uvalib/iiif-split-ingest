@@ -18,15 +18,14 @@ func splitFile(workerId int, config ServiceConfig, inputName string) ([]string, 
 	baseNoExt := strings.TrimSuffix(baseName, fileExt)
 
 	// specify the output template
-	outputFile := fmt.Sprintf("%s/%s-%%03d.%s", dirName, baseNoExt, config.SplitSuffix)
+	outputTemplate := fmt.Sprintf("%s/%s", dirName, baseNoExt)
+
+	// build the command line
+	cmdLine := strings.Replace(config.SplitCommandLine, config.InFilePlaceHolder, inputName, 1)
+	cmdLine = strings.Replace(cmdLine, config.OutFilePlaceHolder, outputTemplate, 1)
 
 	// build the parameter structure
-	params := []string{inputName}
-	opts := strings.Split(config.SplitOptions, " ")
-	for _, o := range opts {
-		params = append(params, o)
-	}
-	params = append(params, outputFile)
+	params := strings.Split(cmdLine, " ")
 	cmd := exec.Command(config.SplitBinary, params...)
 
 	log.Printf("[worker %d] DEBUG: split command \"%s\"", workerId, cmd.String())
@@ -62,13 +61,12 @@ func splitFile(workerId int, config ServiceConfig, inputName string) ([]string, 
 
 func convertFile(workerId int, config ServiceConfig, inputFile string, outputFile string) error {
 
+	// build the command line
+	cmdLine := strings.Replace(config.ConvertCommandLine, config.InFilePlaceHolder, inputFile, 1)
+	cmdLine = strings.Replace(cmdLine, config.OutFilePlaceHolder, outputFile, 1)
+
 	// build the parameter structure
-	params := []string{inputFile}
-	opts := strings.Split(config.ConvertOptions, " ")
-	for _, o := range opts {
-		params = append(params, o)
-	}
-	params = append(params, outputFile)
+	params := strings.Split(cmdLine, " ")
 	cmd := exec.Command(config.ConvertBinary, params...)
 
 	log.Printf("[worker %d] DEBUG: convert command \"%s\"", workerId, cmd.String())

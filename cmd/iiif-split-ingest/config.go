@@ -18,15 +18,19 @@ type ServiceConfig struct {
 	DeleteAfterProcess bool   // delete the bucket object after processing
 	FailOnOverwrite    bool   // fail if the converted file will overwrite an existing one
 
+	// command line placeholders
+	InFilePlaceHolder  string // the placeholder token for the input file
+	OutFilePlaceHolder string // the placeholder token for the output file
+
 	// image splitting support
-	SplitBinary  string // the file split binary
-	SplitSuffix  string // the suffix of split files
-	SplitOptions string // the split options
+	SplitBinary      string // the file split binary
+	SplitSuffix      string // the suffix of split files
+	SplitCommandLine string // the split commandline
 
 	// image conversion support
-	ConvertBinary  string // the conversion binary
-	ConvertSuffix  string // the suffix of converted files
-	ConvertOptions string // the conversion options
+	ConvertBinary      string // the conversion binary
+	ConvertSuffix      string // the suffix of converted files
+	ConvertCommandLine string // the conversion commandline
 
 	// output location support
 	ImageOutputRoot    string // the converted image output directory
@@ -102,15 +106,19 @@ func LoadConfiguration() *ServiceConfig {
 	cfg.DeleteAfterProcess = envToBoolean("IIIF_INGEST_DELETE_AFTER_PROCESS")
 	cfg.FailOnOverwrite = envToBoolean("IIIF_INGEST_FAIL_ON_OVERWRITE")
 
+	// command line placeholder support
+	cfg.InFilePlaceHolder = ensureSetAndNonEmpty("IIIF_INGEST_INFILE_PLACEHOLDER")
+	cfg.OutFilePlaceHolder = ensureSetAndNonEmpty("IIIF_INGEST_OUTFILE_PLACEHOLDER")
+
 	// image splitting support
 	cfg.SplitBinary = envWithDefault("IIIF_INGEST_SPLIT_BIN", "")
 	cfg.SplitSuffix = envWithDefault("IIIF_INGEST_SPLIT_SUFFIX", "")
-	cfg.SplitOptions = envWithDefault("IIIF_INGEST_SPLIT_OPTS", "")
+	cfg.SplitCommandLine = envWithDefault("IIIF_INGEST_SPLIT_CMD", "")
 
 	// image conversion support
 	cfg.ConvertBinary = ensureSetAndNonEmpty("IIIF_INGEST_CONVERT_BIN")
 	cfg.ConvertSuffix = ensureSetAndNonEmpty("IIIF_INGEST_CONVERT_SUFFIX")
-	cfg.ConvertOptions = ensureSetAndNonEmpty("IIIF_INGEST_CONVERT_OPTS")
+	cfg.ConvertCommandLine = ensureSetAndNonEmpty("IIIF_INGEST_CONVERT_CMD")
 
 	// output location support
 	cfg.ImageOutputRoot = ensureSetAndNonEmpty("IIIF_INGEST_IMAGE_OUTPUT_ROOT")
@@ -130,15 +138,19 @@ func LoadConfiguration() *ServiceConfig {
 	log.Printf("[CONFIG] DeleteAfterProcess       = [%t]", cfg.DeleteAfterProcess)
 	log.Printf("[CONFIG] FailOnOverwrite          = [%t]", cfg.FailOnOverwrite)
 
+	// command line placeholder support
+	log.Printf("[CONFIG] InFilePlaceHolder        = [%s]", cfg.InFilePlaceHolder)
+	log.Printf("[CONFIG] OutFilePlaceHolder       = [%s]", cfg.OutFilePlaceHolder)
+
 	// image splitting support
 	log.Printf("[CONFIG] SplitBinary              = [%s]", cfg.SplitBinary)
 	log.Printf("[CONFIG] SplitSuffix              = [%s]", cfg.SplitSuffix)
-	log.Printf("[CONFIG] SplitOptions             = [%s]", cfg.SplitOptions)
+	log.Printf("[CONFIG] SplitCommandLine         = [%s]", cfg.SplitCommandLine)
 
 	// image conversion support
 	log.Printf("[CONFIG] ConvertBinary            = [%s]", cfg.ConvertBinary)
 	log.Printf("[CONFIG] ConvertSuffix            = [%s]", cfg.ConvertSuffix)
-	log.Printf("[CONFIG] ConvertOptions           = [%s]", cfg.ConvertOptions)
+	log.Printf("[CONFIG] ConvertCommandLine       = [%s]", cfg.ConvertCommandLine)
 
 	// output location support
 	log.Printf("[CONFIG] ImageOutputRoot          = [%s]", cfg.ImageOutputRoot)
@@ -151,7 +163,7 @@ func LoadConfiguration() *ServiceConfig {
 
 	// validate the config if we have splitting behavior
 	if len(cfg.SplitBinary) != 0 {
-		if len(cfg.SplitSuffix) == 0 || len(cfg.SplitOptions) == 0 {
+		if len(cfg.SplitSuffix) == 0 || len(cfg.SplitCommandLine) == 0 {
 			log.Printf("[main] ERROR: split configuration incomplete")
 			os.Exit(1)
 		}
