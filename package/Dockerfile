@@ -17,6 +17,9 @@ FROM debian:buster-slim
 # update the packages
 RUN apt-get -y update && apt-get -y upgrade && apt-get -y install procps htop ca-certificates imagemagick-6.q16
 
+# disable imagemagick policies
+RUN rm -f /etc/ImageMagick*/policy.xml
+
 # Create the run user and group
 RUN groupadd -g 18570 docker && useradd -u 1984 -g docker docker
 
