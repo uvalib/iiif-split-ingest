@@ -25,7 +25,7 @@ ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Specify home 
-ENV APP_HOME /iiif-ingest
+ENV APP_HOME /iiif-split-ingest
 WORKDIR $APP_HOME
 
 # Create necessary directories
@@ -38,10 +38,10 @@ CMD scripts/entry.sh
 # Move in necessary assets
 COPY package/data/container_bash_profile /home/docker/.profile
 COPY package/scripts/entry.sh $APP_HOME/scripts/entry.sh
-COPY --from=builder /build/bin/iiif-ingest.linux $APP_HOME/bin/iiif-ingest
+COPY --from=builder /build/bin/iiif-split-ingest.linux $APP_HOME/bin/iiif-split-ingest
 
 # Ensure permissions are correct
-RUN chown docker:docker /home/docker/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/iiif-ingest && chmod 755 /home/docker/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/iiif-ingest
+RUN chown docker:docker /home/docker/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/iiif-split-ingest && chmod 755 /home/docker/.profile $APP_HOME/scripts/entry.sh $APP_HOME/bin/iiif-split-ingest
 
 # Add the build tag
 ARG BUILD_TAG

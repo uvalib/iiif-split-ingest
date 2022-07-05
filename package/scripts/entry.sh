@@ -1,6 +1,6 @@
 # run application
 
-./bin/iiif-ingest
+./bin/iiif-split-ingest
 
 #
 # end of file
