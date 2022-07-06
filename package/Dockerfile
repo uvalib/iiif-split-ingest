@@ -41,6 +41,7 @@ CMD scripts/entry.sh
 # Move in necessary assets
 COPY package/data/container_bash_profile /home/docker/.profile
 COPY package/scripts/entry.sh $APP_HOME/scripts/entry.sh
+COPY templates $APP_HOME/templates/
 COPY --from=builder /build/bin/iiif-split-ingest.linux $APP_HOME/bin/iiif-split-ingest
 
 # Ensure permissions are correct
