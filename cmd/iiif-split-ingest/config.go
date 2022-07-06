@@ -37,8 +37,11 @@ type ServiceConfig struct {
 	PartitionOutputDir bool   // do we 'partition' output directory by id (ab/cd/ef/file(s)...) or not (abcdef/file(s)...)
 
 	// iiif image manifest support
-	ManifestMetadataEndpoint string // the endpoint to use for manifest metadata
 	ManifestTemplateName     string // the name of the template for the manifest
+	ManifestMetadataEndpoint string // the endpoint to use for manifest metadata
+	IIIFServiceRoot          string // the root URL for the appropriate iiif server
+	IdPlaceHolder            string // the placeholder token for the ID
+	ManifestOutputName       string // the manifest output name template
 	ManifestOutputDir        string // the manifest output directory
 }
 
@@ -125,8 +128,11 @@ func LoadConfiguration() *ServiceConfig {
 	cfg.PartitionOutputDir = envToBoolean("IIIF_INGEST_PARTITION_OUTPUT_DIR")
 
 	// iiif image manifest support
-	cfg.ManifestMetadataEndpoint = envWithDefault("IIIF_INGEST_METADATA_ENDPOINT", "")
 	cfg.ManifestTemplateName = envWithDefault("IIIF_INGEST_MANIFEST_TEMPLATE", "")
+	cfg.ManifestMetadataEndpoint = envWithDefault("IIIF_INGEST_METADATA_ENDPOINT", "")
+	cfg.IIIFServiceRoot = envWithDefault("IIIF_SERVICE_URL", "")
+	cfg.IdPlaceHolder = envWithDefault("IIIF_INGEST_ID_PLACEHOLDER", "")
+	cfg.ManifestOutputName = envWithDefault("IIIF_INGEST_MANIFEST_OUTPUT_NAME", "")
 	cfg.ManifestOutputDir = envWithDefault("IIIF_INGEST_MANIFEST_OUTPUT_DIR", "")
 
 	// basic configuration
@@ -159,6 +165,8 @@ func LoadConfiguration() *ServiceConfig {
 	// iiif image manifest support
 	log.Printf("[CONFIG] ManifestMetadataEndpoint = [%s]", cfg.ManifestMetadataEndpoint)
 	log.Printf("[CONFIG] ManifestTemplateName     = [%s]", cfg.ManifestTemplateName)
+	log.Printf("[CONFIG] IdPlaceHolder            = [%s]", cfg.IdPlaceHolder)
+	log.Printf("[CONFIG] ManifestOutputName       = [%s]", cfg.ManifestOutputName)
 	log.Printf("[CONFIG] ManifestOutputDir        = [%s]", cfg.ManifestOutputDir)
 
 	// validate the config if we have splitting behavior
@@ -176,9 +184,15 @@ func LoadConfiguration() *ServiceConfig {
 	}
 
 	// validate the config if we have manifest behavior
-	if len(cfg.ManifestMetadataEndpoint) != 0 {
-		if len(cfg.ManifestTemplateName) == 0 || len(cfg.ManifestOutputDir) == 0 {
+	if len(cfg.ManifestTemplateName) != 0 {
+		if len(cfg.ManifestMetadataEndpoint) == 0 || len(cfg.IIIFServiceRoot) == 0 ||
+			len(cfg.IdPlaceHolder) == 0 || len(cfg.ManifestOutputName) == 0 || len(cfg.ManifestOutputDir) == 0 {
 			log.Printf("[main] ERROR: manifest configuration incomplete")
+			os.Exit(1)
+		}
+		// verify the manifest template exists
+		if fileExists(cfg.ManifestTemplateName) == false {
+			log.Printf("[main] ERROR: manifest template [%s] does not exist", cfg.ManifestTemplateName)
 			os.Exit(1)
 		}
 	}

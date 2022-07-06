@@ -15,7 +15,7 @@ RUN make linux
 FROM debian:buster-slim
 
 # update the packages
-RUN apt-get -y update && apt-get -y upgrade && apt-get -y install procps htop ca-certificates imagemagick-6.q16
+RUN apt-get -y update && apt-get -y upgrade && apt-get -y install procps htop ca-certificates imagemagick-6.q16 exiftool
 
 # disable imagemagick policies
 RUN rm -f /etc/ImageMagick*/policy.xml

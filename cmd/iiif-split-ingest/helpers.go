@@ -46,7 +46,7 @@ func deleteS3File(workerId int, s3Svc uva_s3.UvaS3, bucket string, key string) e
 }
 
 // generate the names of the conversion and target files
-func generateFilenames(workerId int, config ServiceConfig, downloadName string, inputName string) (string, string) {
+func generateImageFilenames(workerId int, config ServiceConfig, downloadName string, inputName string) (string, string) {
 
 	// split into interesting components
 	inputDirName := path.Dir(inputName)
@@ -69,6 +69,18 @@ func generateFilenames(workerId int, config ServiceConfig, downloadName string, 
 	convertName := fmt.Sprintf("%s/%s.%s", inputDirName, inputBaseNoExt, config.ConvertSuffix)
 	outputName := fmt.Sprintf("%s/%s/%s.%s", config.ImageOutputRoot, outputDirName(workerId, config, id), inputBaseNoExt, config.ConvertSuffix)
 	return convertName, outputName
+}
+
+func generateManifestFilename(config ServiceConfig, downloadName string) string {
+
+	// we use the original download name for the manifest id
+	downloadBaseName := path.Base(downloadName)
+	downloadFileExt := path.Ext(downloadBaseName)
+	downloadBaseNoExt := strings.TrimSuffix(downloadBaseName, downloadFileExt)
+
+	// do placeholder substitution
+	filename := strings.Replace(config.ManifestOutputName, config.IdPlaceHolder, downloadBaseNoExt, 1)
+	return fmt.Sprintf("%s/%s", config.ManifestOutputDir, filename)
 }
 
 // make the target directory tree based on the id and configuration
@@ -167,6 +179,11 @@ func listFiles(workerId int, directory string, prefix string, suffix string) ([]
 	}
 
 	return filesFound, nil
+}
+
+func writeFile(filename string, buffer string) error {
+	data := []byte(buffer)
+	return ioutil.WriteFile(filename, data, 0644)
 }
 
 func fileExists(filename string) bool {

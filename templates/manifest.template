@@ -1,0 +1,45 @@
+{
+   "@context":"http://iiif.io/api/presentation/2/context.json",
+   "@id":"{{.URL}}",
+   "@type":"sc:Manifest",
+   {{- if .Title}}
+   "label":"{{.Title}}",
+   {{- end}}
+   "sequences":[
+      {
+         "@type":"sc:Sequence",
+         "canvases":[
+            {{- $iiifURL := .IIIFUrl -}}
+            {{- range $index, $element := .Pages -}}
+            {{- if $index}},{{end -}}
+            {
+               "@id":"{{$iiifURL}}/iiifdibs/dl/{{.Id}}/canvases/{{.Filename}}",
+               "@type":"sc:Canvas",
+               "thumbnail":"{{$iiifURL}}/iiifdibs/dibs:{{.Id}}/full/!200,200/0/default.jpg",
+               "width": {{.Width}},
+               "height": {{.Height}},
+               "images":[
+                  {
+                     "@type":"oa:Annotation",
+                     "motivation":"sc:painting",
+                     "resource":{
+                        "@id":"{{$iiifURL}}/iiifdibs/dibs:{{.Id}}/full/full/0/default.jpg",
+                        "@type":"dcTypes:Image",
+                        "format":"{{.Format}}",
+                        "width": {{.Width}},
+                        "height": {{.Height}},
+                        "service":{
+                           "@context":"http://iiif.io/api/image/2/context.json",
+                           "@id":"{{$iiifURL}}/iiifdibs/dibs:{{.Id}}",
+                           "profile":"http://iiif.io/api/image/2/level1.json"
+                        }
+                     },
+                     "on":"{{$iiifURL}}/iiifdibs/dl/{{.Id}}/canvases/{{.Filename}}"
+                  }
+               ]
+            }
+            {{- end}}
+         ]
+      }
+   ]
+}

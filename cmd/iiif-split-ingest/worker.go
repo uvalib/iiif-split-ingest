@@ -69,7 +69,7 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 		for _, inputName := range convertFiles {
 
 			// generate all the needed file names
-			convertedName, targetName := generateFilenames(workerId, config, downloadedName, inputName)
+			convertedName, targetName := generateImageFilenames(workerId, config, downloadedName, inputName)
 
 			// if we should fail when a converted file already exists
 			if config.FailOnOverwrite == true && fileExists(targetName) {
@@ -107,8 +107,8 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 		if err == nil {
 
 			// should we create a manifest for the processed file(s)
-			if len(config.ManifestMetadataEndpoint) != 0 {
-
+			if len(config.ManifestTemplateName) != 0 {
+				_ = createManifest(workerId, config, downloadedName, targetFiles)
 			}
 
 			// should we delete the bucket contents
