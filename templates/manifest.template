@@ -1,10 +1,46 @@
 {
-   "@context":"http://iiif.io/api/presentation/2/context.json",
+   "@context":"https://iiif.io/api/presentation/2/context.json",
    "@id":"{{.URL}}",
    "@type":"sc:Manifest",
    {{- if .Title}}
    "label":"{{.Title}}",
+   {{- else}}
+   "label":"UNKNOWN",
    {{- end}}
+   "metadata": [
+    {
+      "label": "Author",
+      {{- if .Author}}
+      "value": "{{.Author}}"
+      {{- else}}
+      "value": "UNKNOWN"
+      {{- end}}
+    },
+    {
+      "label": "Published",
+      {{- if .Published}}
+      "value": "{{.Published}}"
+      {{- else}}
+      "value": "UNKNOWN"
+      {{- end}}
+    },
+    {
+      "label": "Description",
+      {{- if .Description}}
+      "value": "{{.Description}}"
+      {{- else}}
+      "value": "UNKNOWN"
+      {{- end}}
+    },
+    {
+      "label": "Subjects",
+      {{- if .Subjects}}
+      "value": "{{.Subjects}}"
+      {{- else}}
+      "value": "UNKNOWN"
+      {{- end}}
+    }
+   ],
    "sequences":[
       {
          "@type":"sc:Sequence",
@@ -13,11 +49,12 @@
             {{- range $index, $element := .Pages -}}
             {{- if $index}},{{end -}}
             {
-               "@id":"{{$iiifURL}}/iiifdibs/dl/{{.Id}}/canvases/{{.Filename}}",
+               "@id":"{{$iiifURL}}/iiifdibs/dl/dibs:{{.Id}}/canvases/c{{$index}}",
                "@type":"sc:Canvas",
                "thumbnail":"{{$iiifURL}}/iiifdibs/dibs:{{.Id}}/full/!200,200/0/default.jpg",
                "width": {{.Width}},
                "height": {{.Height}},
+               "label": {{$index}},
                "images":[
                   {
                      "@type":"oa:Annotation",
@@ -29,12 +66,12 @@
                         "width": {{.Width}},
                         "height": {{.Height}},
                         "service":{
-                           "@context":"http://iiif.io/api/image/2/context.json",
+                           "@context":"https://iiif.io/api/image/2/context.json",
                            "@id":"{{$iiifURL}}/iiifdibs/dibs:{{.Id}}",
-                           "profile":"http://iiif.io/api/image/2/level1.json"
+                           "profile":"https://iiif.io/api/image/2/level1.json"
                         }
                      },
-                     "on":"{{$iiifURL}}/iiifdibs/dl/{{.Id}}/canvases/{{.Filename}}"
+                     "on":"{{$iiifURL}}/iiifdibs/dl/dibs:{{.Id}}/canvases/c{{$index}}"
                   }
                ]
             }

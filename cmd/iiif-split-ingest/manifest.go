@@ -19,10 +19,14 @@ type Image struct {
 }
 
 type ManifestData struct {
-	URL     string  //
-	Title   string  // document title
-	IIIFUrl string  // root URL of the iiif server
-	Pages   []Image // image details for each page
+	URL         string  // the manifest URL
+	Title       string  // document title
+	Author      string  // document author
+	Published   string  // publication date
+	Description string  // the description
+	Subjects    string  // the subjects
+	IIIFUrl     string  // root URL of the iiif server
+	Pages       []Image // image details for each page
 }
 
 func createManifest(workerId int, config ServiceConfig, inputFile string, convertedFiles []string) error {
@@ -61,8 +65,13 @@ func createManifestData(workerId int, config ServiceConfig, inputFile string, co
 		return nil, err
 	}
 
+	// setup the metadata
 	md.URL = "THE URL"
 	md.Title = "THE TITLE"
+	md.Author = "THE AUTHOR"
+	md.Published = "PUBLISHED DATE"
+	md.Description = "THE DESCRIPTION"
+	md.Subjects = "THE SUBJECTS"
 	md.IIIFUrl = config.IIIFServiceRoot
 	md.Pages = pages
 
