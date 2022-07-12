@@ -18,15 +18,19 @@ type Image struct {
 	Format   string // image format
 }
 
+type Metadata struct {
+	Title       string // document title
+	Author      string // document author
+	Published   string // publication date
+	Description string // the description
+	Subjects    string // the subjects
+}
+
 type ManifestData struct {
-	URL         string  // the manifest URL
-	Title       string  // document title
-	Author      string  // document author
-	Published   string  // publication date
-	Description string  // the description
-	Subjects    string  // the subjects
-	IIIFUrl     string  // root URL of the iiif server
-	Pages       []Image // image details for each page
+	Metadata
+	URL     string  // the manifest URL
+	IIIFUrl string  // root URL of the iiif server
+	Pages   []Image // image details for each page
 }
 
 func createManifest(workerId int, config ServiceConfig, inputFile string, convertedFiles []string) error {
@@ -57,25 +61,30 @@ func createManifest(workerId int, config ServiceConfig, inputFile string, conver
 
 func createManifestData(workerId int, config ServiceConfig, inputFile string, convertedFiles []string) (*ManifestData, error) {
 
-	var md ManifestData
-
 	// get attributes of all the pages (images) in the manifest
 	pages, err := createPageAttributes(workerId, config, convertedFiles)
 	if err != nil {
 		return nil, err
 	}
 
-	// setup the metadata
-	md.URL = "THE URL"
-	md.Title = "THE TITLE"
-	md.Author = "THE AUTHOR"
-	md.Published = "PUBLISHED DATE"
-	md.Description = "THE DESCRIPTION"
-	md.Subjects = "THE SUBJECTS"
-	md.IIIFUrl = config.IIIFServiceRoot
-	md.Pages = pages
+	// get the metadata
+	metadata, err := generateMetadata(workerId, config, inputFile)
+	if err != nil {
+		return nil, err
+	}
 
-	return &md, nil
+	// populate the manifest data
+	var manifestData ManifestData
+	manifestData.URL = "THE URL"
+	manifestData.Title = metadata.Title
+	manifestData.Author = metadata.Author
+	manifestData.Published = metadata.Published
+	manifestData.Description = metadata.Description
+	manifestData.Subjects = metadata.Subjects
+	manifestData.IIIFUrl = config.IIIFServiceRoot
+	manifestData.Pages = pages
+
+	return &manifestData, nil
 }
 
 func createPageAttributes(workerId int, config ServiceConfig, convertedFiles []string) ([]Image, error) {

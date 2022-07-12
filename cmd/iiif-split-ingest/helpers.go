@@ -74,13 +74,19 @@ func generateImageFilenames(workerId int, config ServiceConfig, downloadName str
 func generateManifestFilename(config ServiceConfig, downloadName string) string {
 
 	// we use the original download name for the manifest id
-	downloadBaseName := path.Base(downloadName)
-	downloadFileExt := path.Ext(downloadBaseName)
-	downloadBaseNoExt := strings.TrimSuffix(downloadBaseName, downloadFileExt)
+	id := idFromFilename(downloadName)
 
 	// do placeholder substitution
-	filename := strings.Replace(config.ManifestOutputName, config.IdPlaceHolder, downloadBaseNoExt, 1)
+	filename := strings.Replace(config.ManifestOutputName, config.IdPlaceHolder, id, 1)
 	return fmt.Sprintf("%s/%s", config.ManifestOutputDir, filename)
+}
+
+func idFromFilename(downloadName string) string {
+
+	// we use the original download name for the manifest id
+	downloadBaseName := path.Base(downloadName)
+	downloadFileExt := path.Ext(downloadBaseName)
+	return strings.TrimSuffix(downloadBaseName, downloadFileExt)
 }
 
 // make the target directory tree based on the id and configuration

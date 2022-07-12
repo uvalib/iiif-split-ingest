@@ -37,12 +37,17 @@ type ServiceConfig struct {
 	PartitionOutputDir bool   // do we 'partition' output directory by id (ab/cd/ef/file(s)...) or not (abcdef/file(s)...)
 
 	// iiif image manifest support
-	ManifestTemplateName     string // the name of the template for the manifest
-	ManifestMetadataEndpoint string // the endpoint to use for manifest metadata
-	IIIFServiceRoot          string // the root URL for the appropriate iiif server
-	IdPlaceHolder            string // the placeholder token for the ID
-	ManifestOutputName       string // the manifest output name template
-	ManifestOutputDir        string // the manifest output directory
+	ManifestTemplateName string // the name of the template for the manifest
+	IIIFServiceRoot      string // the root URL for the appropriate iiif server
+	IdPlaceHolder        string // the placeholder token for the ID
+	ManifestOutputName   string // the manifest output name template
+	ManifestOutputDir    string // the manifest output directory
+
+	// metadata support
+	ManifestMetadataQueryEndpoint string // the endpoint to use for the metadata query
+	ManifestMetadataAuthEndpoint  string // the endpoint to use for query authorization
+	ManifestMetadataQueryTemplate string // the template to use for the metadata query
+	ManifestMetadataQueryTimeout  int    // the metadata query timeout (in seconds)
 }
 
 func envWithDefault(env string, defaultValue string) string {
@@ -129,45 +134,55 @@ func LoadConfiguration() *ServiceConfig {
 
 	// iiif image manifest support
 	cfg.ManifestTemplateName = envWithDefault("IIIF_INGEST_MANIFEST_TEMPLATE", "")
-	cfg.ManifestMetadataEndpoint = envWithDefault("IIIF_INGEST_METADATA_ENDPOINT", "")
 	cfg.IIIFServiceRoot = envWithDefault("IIIF_SERVICE_URL", "")
 	cfg.IdPlaceHolder = envWithDefault("IIIF_INGEST_ID_PLACEHOLDER", "")
 	cfg.ManifestOutputName = envWithDefault("IIIF_INGEST_MANIFEST_OUTPUT_NAME", "")
 	cfg.ManifestOutputDir = envWithDefault("IIIF_INGEST_MANIFEST_OUTPUT_DIR", "")
 
+	// metadata support
+	cfg.ManifestMetadataQueryEndpoint = envWithDefault("IIIF_INGEST_METADATA_QUERY_ENDPOINT", "")
+	cfg.ManifestMetadataAuthEndpoint = envWithDefault("IIIF_INGEST_METADATA_AUTH_ENDPOINT", "")
+	cfg.ManifestMetadataQueryTemplate = envWithDefault("IIIF_INGEST_METADATA_QUERY_TEMPLATE", "")
+	cfg.ManifestMetadataQueryTimeout, _ = strconv.Atoi(envWithDefault("IIIF_INGEST_METADATA_QUERY_TIMEOUT", "30"))
+
 	// basic configuration
-	log.Printf("[CONFIG] InQueueName              = [%s]", cfg.InQueueName)
-	log.Printf("[CONFIG] PollTimeOut              = [%d]", cfg.PollTimeOut)
-	log.Printf("[CONFIG] LocalWorkDir             = [%s]", cfg.LocalWorkDir)
-	log.Printf("[CONFIG] WorkerQueueSize          = [%d]", cfg.WorkerQueueSize)
-	log.Printf("[CONFIG] Workers                  = [%d]", cfg.Workers)
-	log.Printf("[CONFIG] DeleteAfterProcess       = [%t]", cfg.DeleteAfterProcess)
-	log.Printf("[CONFIG] FailOnOverwrite          = [%t]", cfg.FailOnOverwrite)
+	log.Printf("[CONFIG] InQueueName                   = [%s]", cfg.InQueueName)
+	log.Printf("[CONFIG] PollTimeOut                   = [%d]", cfg.PollTimeOut)
+	log.Printf("[CONFIG] LocalWorkDir                  = [%s]", cfg.LocalWorkDir)
+	log.Printf("[CONFIG] WorkerQueueSize               = [%d]", cfg.WorkerQueueSize)
+	log.Printf("[CONFIG] Workers                       = [%d]", cfg.Workers)
+	log.Printf("[CONFIG] DeleteAfterProcess            = [%t]", cfg.DeleteAfterProcess)
+	log.Printf("[CONFIG] FailOnOverwrite               = [%t]", cfg.FailOnOverwrite)
 
 	// command line placeholder support
-	log.Printf("[CONFIG] InFilePlaceHolder        = [%s]", cfg.InFilePlaceHolder)
-	log.Printf("[CONFIG] OutFilePlaceHolder       = [%s]", cfg.OutFilePlaceHolder)
+	log.Printf("[CONFIG] InFilePlaceHolder             = [%s]", cfg.InFilePlaceHolder)
+	log.Printf("[CONFIG] OutFilePlaceHolder            = [%s]", cfg.OutFilePlaceHolder)
 
 	// image splitting support
-	log.Printf("[CONFIG] SplitBinary              = [%s]", cfg.SplitBinary)
-	log.Printf("[CONFIG] SplitSuffix              = [%s]", cfg.SplitSuffix)
-	log.Printf("[CONFIG] SplitCommandLine         = [%s]", cfg.SplitCommandLine)
+	log.Printf("[CONFIG] SplitBinary                   = [%s]", cfg.SplitBinary)
+	log.Printf("[CONFIG] SplitSuffix                   = [%s]", cfg.SplitSuffix)
+	log.Printf("[CONFIG] SplitCommandLine              = [%s]", cfg.SplitCommandLine)
 
 	// image conversion support
-	log.Printf("[CONFIG] ConvertBinary            = [%s]", cfg.ConvertBinary)
-	log.Printf("[CONFIG] ConvertSuffix            = [%s]", cfg.ConvertSuffix)
-	log.Printf("[CONFIG] ConvertCommandLine       = [%s]", cfg.ConvertCommandLine)
+	log.Printf("[CONFIG] ConvertBinary                 = [%s]", cfg.ConvertBinary)
+	log.Printf("[CONFIG] ConvertSuffix                 = [%s]", cfg.ConvertSuffix)
+	log.Printf("[CONFIG] ConvertCommandLine            = [%s]", cfg.ConvertCommandLine)
 
 	// output location support
-	log.Printf("[CONFIG] ImageOutputRoot          = [%s]", cfg.ImageOutputRoot)
-	log.Printf("[CONFIG] PartitionOutputDir       = [%t]", cfg.PartitionOutputDir)
+	log.Printf("[CONFIG] ImageOutputRoot               = [%s]", cfg.ImageOutputRoot)
+	log.Printf("[CONFIG] PartitionOutputDir            = [%t]", cfg.PartitionOutputDir)
 
 	// iiif image manifest support
-	log.Printf("[CONFIG] ManifestMetadataEndpoint = [%s]", cfg.ManifestMetadataEndpoint)
-	log.Printf("[CONFIG] ManifestTemplateName     = [%s]", cfg.ManifestTemplateName)
-	log.Printf("[CONFIG] IdPlaceHolder            = [%s]", cfg.IdPlaceHolder)
-	log.Printf("[CONFIG] ManifestOutputName       = [%s]", cfg.ManifestOutputName)
-	log.Printf("[CONFIG] ManifestOutputDir        = [%s]", cfg.ManifestOutputDir)
+	log.Printf("[CONFIG] ManifestTemplateName          = [%s]", cfg.ManifestTemplateName)
+	log.Printf("[CONFIG] IdPlaceHolder                 = [%s]", cfg.IdPlaceHolder)
+	log.Printf("[CONFIG] ManifestOutputName            = [%s]", cfg.ManifestOutputName)
+	log.Printf("[CONFIG] ManifestOutputDir             = [%s]", cfg.ManifestOutputDir)
+
+	// metadata support
+	log.Printf("[CONFIG] ManifestMetadataQueryEndpoint = [%s]", cfg.ManifestMetadataQueryEndpoint)
+	log.Printf("[CONFIG] ManifestMetadataAuthEndpoint  = [%s]", cfg.ManifestMetadataAuthEndpoint)
+	log.Printf("[CONFIG] ManifestMetadataQueryTemplate = [%s]", cfg.ManifestMetadataQueryTemplate)
+	log.Printf("[CONFIG] ManifestMetadataQueryTimeout  = [%d]", cfg.ManifestMetadataQueryTimeout)
 
 	// validate the config if we have splitting behavior
 	if len(cfg.SplitBinary) != 0 {
@@ -185,16 +200,26 @@ func LoadConfiguration() *ServiceConfig {
 
 	// validate the config if we have manifest behavior
 	if len(cfg.ManifestTemplateName) != 0 {
-		if len(cfg.ManifestMetadataEndpoint) == 0 || len(cfg.IIIFServiceRoot) == 0 ||
+		if len(cfg.IIIFServiceRoot) == 0 ||
 			len(cfg.IdPlaceHolder) == 0 || len(cfg.ManifestOutputName) == 0 || len(cfg.ManifestOutputDir) == 0 {
 			log.Printf("[main] ERROR: manifest configuration incomplete")
 			os.Exit(1)
 		}
+
+		// verify the metadata configuration is good
+		if len(cfg.ManifestMetadataQueryEndpoint) != 0 {
+			if len(cfg.ManifestMetadataAuthEndpoint) == 0 || len(cfg.ManifestMetadataQueryTemplate) == 0 {
+				log.Printf("[main] ERROR: metadata configuration incomplete")
+				os.Exit(1)
+			}
+		}
+
 		// verify the manifest template exists
 		if fileExists(cfg.ManifestTemplateName) == false {
 			log.Printf("[main] ERROR: manifest template [%s] does not exist", cfg.ManifestTemplateName)
 			os.Exit(1)
 		}
+
 	}
 	return &cfg
 }
