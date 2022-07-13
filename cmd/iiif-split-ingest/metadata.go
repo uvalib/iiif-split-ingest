@@ -50,6 +50,7 @@ func generateMetadata(workerId int, config ServiceConfig, downloadName string) (
 	return &md, nil
 }
 
+// get metadata for the manifest from the configured endpoint
 func getMetadata(workerId int, config ServiceConfig, client *http.Client, id string, auth string) (*Metadata, error) {
 
 	// make the query template
@@ -61,12 +62,12 @@ func getMetadata(workerId int, config ServiceConfig, client *http.Client, id str
 		return nil, err
 	}
 
-	//log.Printf("worker %d: DEBUG received query response [%s]", workerId, string(b))
+	log.Printf("[worker %d] DEBUG: received query response [%s]", workerId, string(b))
 
 	sr := SearchResult{}
 	err = json.Unmarshal(b, &sr)
 	if err != nil {
-		log.Printf("worker %d: ERROR json unmarshal error (%s)", workerId, err)
+		log.Printf("[worker %d] ERROR: json unmarshal error (%s)", workerId, err)
 		return nil, err
 	}
 
@@ -74,28 +75,56 @@ func getMetadata(workerId int, config ServiceConfig, client *http.Client, id str
 	var md Metadata
 
 	// if we did not get any results
-	if len(sr.Groups) == 0 {
-		log.Printf("worker %d: WARNING received no results for id [%s]", workerId, id)
+	if len(sr.Groups) == 0 || len(sr.Groups[0].Records) == 0 {
+		log.Printf("[worker %d] WARNING: received no results for id [%s]", workerId, id)
 		// return an empty structure
 		return &md, nil
 	}
 
-	if len(sr.Groups) > 1 {
-		log.Printf("worker %d: WARNING received multiple results for id [%s], using the first one", workerId, id)
+	// if we received more than 1 result, attempt a match by barcode but default to the first result in the event that we
+	// cannot find the barcode to match
+	resultIx := 0
+	resultSize := len(sr.Groups[0].Records)
+	if resultSize > 1 {
+		log.Printf("[worker %d] INFO: received %d results for id [%s], attempting match by barcode", workerId, resultSize, id)
+		var matched bool
+		resultIx, matched = findByBarcode(sr.Groups[0].Records, id)
+		if matched == true {
+			log.Printf("[worker %d] DEBUG: matched by barcode [%s], using result # %d", workerId, id, resultIx+1)
+		} else {
+			log.Printf("[worker %d] WARNING: cannot match by barcode [%s], using the first of %d results", workerId, id, resultSize)
+		}
 	}
 
-	// more smarts later...
-	fields := sr.Groups[0].Records[0].Fields
+	fields := sr.Groups[0].Records[resultIx].Fields
 
-	md.Title = getField("title", fields)
-	md.Author = getField("author", fields)
-	md.Published = getField("published_date", fields)
-	//md.Description = getField("xxx", fields)
-	//md.Subjects = getField("xxx", fields)
+	md.Title = getFirstField("title", fields)
+	md.Author = getFirstField("author", fields)
+	md.Published = getFirstField("published_date", fields)
+	//md.Description = getFirstField("xxx", fields)
+	//md.Subjects = getFirstField("xxx", fields)
 
 	return &md, nil
 }
 
+// find a search result by matching the id with the barcode (if possible) and return the index if located
+func findByBarcode(results []Record, id string) (int, bool) {
+
+	// iterate through results and attempt to match the barcode
+	for ix, r := range results {
+		barcodes := getMultiField("barcode", r.Fields)
+		for _, b := range barcodes {
+			if b == id {
+				return ix, true
+			}
+		}
+	}
+
+	// we did not match a barcode
+	return -1, false
+}
+
+// use auth endpoint to get an auth token
 func getMetadataAuthToken(workerId int, config ServiceConfig, client *http.Client) (string, error) {
 
 	b, err := httpPost(workerId, config.ManifestMetadataAuthEndpoint, client, "", []byte(""))
@@ -103,10 +132,11 @@ func getMetadataAuthToken(workerId int, config ServiceConfig, client *http.Clien
 		return "", err
 	}
 	auth := string(b)
-	//log.Printf("worker %d: INFO received auth token [%s]", workerId, auth)
+	//log.Printf("[worker %d] INFO: received auth token [%s]", workerId, auth)
 	return auth, nil
 }
 
+// helper to select a set or default value
 func defaultIfUnspecified(value string, theDefault string) string {
 	if len(value) != 0 {
 		return value
@@ -114,8 +144,8 @@ func defaultIfUnspecified(value string, theDefault string) string {
 	return theDefault
 }
 
-func getField(name string, fields []Field) string {
-
+// get the first named field value from a set of fields
+func getFirstField(name string, fields []Field) string {
 	for _, f := range fields {
 		if f.Name == name || f.Type == name {
 			log.Printf("DEBUG: located field [%s] -> [%s]", name, f.Value)
@@ -124,6 +154,21 @@ func getField(name string, fields []Field) string {
 	}
 	log.Printf("WARNING: cannot find field [%s] in search results", name)
 	return ""
+}
+
+// get all named field values from a set of fields
+func getMultiField(name string, fields []Field) []string {
+	result := make([]string, 0)
+	for _, f := range fields {
+		if f.Name == name || f.Type == name {
+			log.Printf("DEBUG: located field [%s] -> [%s]", name, f.Value)
+			result = append(result, f.Value)
+		}
+	}
+	if len(result) == 0 {
+		log.Printf("WARNING: cannot find field [%s] in search results", name)
+	}
+	return result
 }
 
 //
