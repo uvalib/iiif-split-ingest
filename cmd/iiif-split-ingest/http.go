@@ -29,8 +29,8 @@ func httpPost(workerId int, url string, client *http.Client, auth string, buffer
 	var response *http.Response
 	count := 0
 
-	log.Printf("worker %d: INFO post url [%s]", workerId, url)
-	log.Printf("worker %d: INFO post payload [%s]", workerId, buffer)
+	log.Printf("[worker %d] INFO: post url [%s]", workerId, url)
+	log.Printf("[worker %d] INFO: post payload [%s]", workerId, buffer)
 
 	for {
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(buffer))
@@ -54,11 +54,11 @@ func httpPost(workerId int, url string, client *http.Client, auth string, buffer
 
 			// break when tried too many times
 			if count >= maxHttpRetries {
-				log.Printf("worker %d: ERROR POST failed with error, giving up (%s)", workerId, err)
+				log.Printf("[worker %d] ERROR: POST failed with error, giving up (%s)", workerId, err)
 				return nil, err
 			}
 
-			log.Printf("worker %d: WARNING POST failed with error, retrying (%s)", workerId, err)
+			log.Printf("[worker %d] WARNING: POST failed with error, retrying (%s)", workerId, err)
 
 			// sleep for a bit before retrying
 			time.Sleep(retrySleepTime)
@@ -73,7 +73,7 @@ func httpPost(workerId int, url string, client *http.Client, auth string, buffer
 
 				// if the body read failed
 				if err != nil {
-					log.Printf("worker %d: ERROR read failed with error (%s)", workerId, err)
+					log.Printf("[worker %d] ERROR: read failed with error (%s)", workerId, err)
 					return nil, err
 				}
 
@@ -81,7 +81,7 @@ func httpPost(workerId int, url string, client *http.Client, auth string, buffer
 				return body, nil
 			}
 
-			log.Printf("worker %d: ERROR POST failed with status %d (%s)", workerId, response.StatusCode, body)
+			log.Printf("[worker %d] ERROR POST failed with status %d (%s)", workerId, response.StatusCode, body)
 			return body, fmt.Errorf("request returns HTTP %d", response.StatusCode)
 		}
 	}
