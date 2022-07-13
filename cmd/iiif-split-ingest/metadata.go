@@ -75,7 +75,8 @@ func getMetadata(workerId int, config ServiceConfig, client *http.Client, id str
 	var md Metadata
 
 	// if we did not get any results
-	if len(sr.Groups) == 0 || len(sr.Groups[0].Records) == 0 {
+	resultCount := len(sr.Groups)
+	if resultCount == 0 {
 		log.Printf("[worker %d] WARNING: received no results for id [%s]", workerId, id)
 		// return an empty structure
 		return &md, nil
@@ -83,20 +84,17 @@ func getMetadata(workerId int, config ServiceConfig, client *http.Client, id str
 
 	// if we received more than 1 result, attempt a match by barcode but default to the first result in the event that we
 	// cannot find the barcode to match
-	resultIx := 0
-	resultSize := len(sr.Groups[0].Records)
-	if resultSize > 1 {
-		log.Printf("[worker %d] INFO: received %d results for id [%s], attempting match by barcode", workerId, resultSize, id)
-		var matched bool
-		resultIx, matched = findByBarcode(sr.Groups[0].Records, id)
+	fields := sr.Groups[0].Records[0].Fields
+	if resultCount > 1 {
+		log.Printf("[worker %d] INFO: received %d results for id [%s], attempting match by barcode", workerId, resultCount, id)
+		flds, matched := findByBarcode(sr.Groups, id)
 		if matched == true {
-			log.Printf("[worker %d] DEBUG: matched by barcode [%s], using result # %d", workerId, id, resultIx+1)
+			log.Printf("[worker %d] DEBUG: matched by barcode [%s]", workerId, id)
+			fields = flds
 		} else {
-			log.Printf("[worker %d] WARNING: cannot match by barcode [%s], using the first of %d results", workerId, id, resultSize)
+			log.Printf("[worker %d] WARNING: cannot match by barcode [%s], using the first of %d results", workerId, id, resultCount)
 		}
 	}
-
-	fields := sr.Groups[0].Records[resultIx].Fields
 
 	md.Title = getFirstField("title", fields)
 	md.Author = getFirstField("author", fields)
@@ -107,21 +105,23 @@ func getMetadata(workerId int, config ServiceConfig, client *http.Client, id str
 	return &md, nil
 }
 
-// find a search result by matching the id with the barcode (if possible) and return the index if located
-func findByBarcode(results []Record, id string) (int, bool) {
+// find a search result by matching the id with the barcode (if possible) and return the field list if located
+func findByBarcode(items []SearchItems, id string) ([]Field, bool) {
 
 	// iterate through results and attempt to match the barcode
-	for ix, r := range results {
-		barcodes := getMultiField("barcode", r.Fields)
-		for _, b := range barcodes {
-			if b == id {
-				return ix, true
+	for _, si := range items {
+		for _, r := range si.Records {
+			barcodes := getMultiField("barcode", r.Fields)
+			for _, b := range barcodes {
+				if b == id {
+					return r.Fields, true
+				}
 			}
 		}
 	}
 
 	// we did not match a barcode
-	return -1, false
+	return nil, false
 }
 
 // use auth endpoint to get an auth token
