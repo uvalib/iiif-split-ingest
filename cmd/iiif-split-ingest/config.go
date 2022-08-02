@@ -48,6 +48,9 @@ type ServiceConfig struct {
 	ManifestMetadataAuthEndpoint  string // the endpoint to use for query authorization
 	ManifestMetadataQueryTemplate string // the template to use for the metadata query
 	ManifestMetadataQueryTimeout  int    // the metadata query timeout (in seconds)
+
+	// static metadata support
+	ManifestMetadataCopyrightText string // static text for the copyright field
 }
 
 func envWithDefault(env string, defaultValue string) string {
@@ -145,6 +148,9 @@ func LoadConfiguration() *ServiceConfig {
 	cfg.ManifestMetadataQueryTemplate = envWithDefault("IIIF_INGEST_METADATA_QUERY_TEMPLATE", "")
 	cfg.ManifestMetadataQueryTimeout, _ = strconv.Atoi(envWithDefault("IIIF_INGEST_METADATA_QUERY_TIMEOUT", "30"))
 
+	// static metadata support
+	cfg.ManifestMetadataCopyrightText = envWithDefault("IIIF_INGEST_METADATA_COPYRIGHT_NOTE", "")
+
 	// basic configuration
 	log.Printf("[CONFIG] InQueueName                   = [%s]", cfg.InQueueName)
 	log.Printf("[CONFIG] PollTimeOut                   = [%d]", cfg.PollTimeOut)
@@ -183,6 +189,9 @@ func LoadConfiguration() *ServiceConfig {
 	log.Printf("[CONFIG] ManifestMetadataAuthEndpoint  = [%s]", cfg.ManifestMetadataAuthEndpoint)
 	log.Printf("[CONFIG] ManifestMetadataQueryTemplate = [%s]", cfg.ManifestMetadataQueryTemplate)
 	log.Printf("[CONFIG] ManifestMetadataQueryTimeout  = [%d]", cfg.ManifestMetadataQueryTimeout)
+
+	// static metadata support
+	log.Printf("[CONFIG] ManifestMetadataCopyrightText = [%d]", cfg.ManifestMetadataCopyrightText)
 
 	// validate the config if we have splitting behavior
 	if len(cfg.SplitBinary) != 0 {

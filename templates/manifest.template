@@ -40,6 +40,14 @@
       "value": "UNKNOWN"
       {{- end}}
     }
+    {
+      "label": "Full conditions of use",
+      {{- if .Copyright}}
+      "value": "{{.Copyright}}"
+      {{- else}}
+      "value": "UNKNOWN"
+      {{- end}}
+    }
    ],
    "sequences":[
       {

@@ -27,10 +27,11 @@ type Metadata struct {
 }
 
 type ManifestData struct {
-	Metadata
-	URL     string  // the manifest URL
-	IIIFUrl string  // root URL of the iiif server
-	Pages   []Image // image details for each page
+	Metadata          // metadata received from external sources
+	Copyright string  // the copyright text (staticly configured)
+	URL       string  // the manifest URL (unused at the moment)
+	IIIFUrl   string  // root URL of the iiif server
+	Pages     []Image // image details for each page
 }
 
 func createManifest(workerId int, config ServiceConfig, inputFile string, convertedFiles []string) error {
@@ -76,6 +77,7 @@ func createManifestData(workerId int, config ServiceConfig, inputFile string, co
 	// populate the manifest data
 	var manifestData ManifestData
 	manifestData.URL = "THE URL"
+	manifestData.Copyright = config.ManifestMetadataCopyrightText
 	manifestData.Title = metadata.Title
 	manifestData.Author = metadata.Author
 	manifestData.Published = metadata.Published
