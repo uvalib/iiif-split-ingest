@@ -1,7 +1,7 @@
 #
 # build the target application
 #
-FROM public.ecr.aws/docker/library/golang:1.18-alpine3.16 as builder
+FROM public.ecr.aws/docker/library/golang:1.19.1-alpine3.16 as builder
 RUN apk update && apk upgrade && apk add make
 
 WORKDIR /build
@@ -12,7 +12,7 @@ RUN make linux
 #
 # build the target container
 #
-FROM debian:buster-slim
+FROM public.ecr.aws/docker/library/debian:buster-slim
 
 # update the packages
 RUN apt-get -y update && apt-get -y upgrade && apt-get -y install procps htop ca-certificates imagemagick-6.q16 exiftool
