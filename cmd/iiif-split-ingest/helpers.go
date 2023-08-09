@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -115,7 +114,7 @@ func outputDirName(workerId int, config ServiceConfig, id string) string {
 // make a working directory
 func makeWorkDir(workerId int, baseDir string) (string, error) {
 
-	workDir, err := ioutil.TempDir(baseDir, "")
+	workDir, err := os.MkdirTemp(baseDir, "*")
 	if err != nil {
 		log.Printf("[worker %d] ERROR: failed to create work directory (%s)", workerId, err.Error())
 		return "", err
@@ -167,7 +166,7 @@ func copyFile(workerId int, oldLocation string, newLocation string) error {
 
 func listFiles(workerId int, directory string, prefix string, suffix string) ([]string, error) {
 
-	files, err := ioutil.ReadDir(directory)
+	files, err := os.ReadDir(directory)
 	if err != nil {
 		log.Printf("[worker %d] ERROR: listing files in '%s' (%s)", workerId, directory, err.Error())
 		return nil, err
@@ -189,7 +188,7 @@ func listFiles(workerId int, directory string, prefix string, suffix string) ([]
 
 func writeFile(filename string, buffer string) error {
 	data := []byte(buffer)
-	return ioutil.WriteFile(filename, data, 0644)
+	return os.WriteFile(filename, data, 0644)
 }
 
 func fileExists(filename string) bool {

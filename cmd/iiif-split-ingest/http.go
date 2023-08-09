@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -66,7 +66,7 @@ func httpPost(workerId int, url string, client *http.Client, auth string, buffer
 
 			defer response.Body.Close()
 
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 
 			// happy day, hopefully all is well
 			if response.StatusCode == http.StatusOK {

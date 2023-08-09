@@ -18,9 +18,6 @@ type Notify struct {
 	ReceiptHandle awssqs.ReceiptHandle // the inbound message receipt handle (so we can delete it)
 }
 
-// special case handling name
-var archivesName = "archives"
-
 func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva_s3.UvaS3, queue awssqs.QueueHandle, notifies <-chan Notify) {
 
 	var notify Notify
