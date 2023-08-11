@@ -21,8 +21,8 @@ func splitFile(workerId int, config ServiceConfig, inputName string) ([]string, 
 	outputTemplate := fmt.Sprintf("%s/%s", dirName, baseNoExt)
 
 	// build the command line
-	cmdLine := strings.Replace(config.SplitCommandLine, config.InFilePlaceHolder, inputName, 1)
-	cmdLine = strings.Replace(cmdLine, config.OutFilePlaceHolder, outputTemplate, 1)
+	cmdLine := strings.Replace(config.SplitCommandLine, config.SplitCommandInFileToken, inputName, 1)
+	cmdLine = strings.Replace(cmdLine, config.SplitCommandOutFileToken, outputTemplate, 1)
 
 	// build the parameter structure
 	params := strings.Split(cmdLine, " ")
@@ -37,6 +37,7 @@ func splitFile(workerId int, config ServiceConfig, inputName string) ([]string, 
 		if len(output) != 0 {
 			log.Printf("[worker %d] ERROR: split output [%s]", workerId, output)
 		}
+
 		// remove the input and output files and ignore any errors
 		//_ = os.Remove(inputFile)
 		//_ = os.Remove(outputFile)
@@ -62,8 +63,8 @@ func splitFile(workerId int, config ServiceConfig, inputName string) ([]string, 
 func convertFile(workerId int, config ServiceConfig, inputFile string, outputFile string) error {
 
 	// build the command line
-	cmdLine := strings.Replace(config.ConvertCommandLine, config.InFilePlaceHolder, inputFile, 1)
-	cmdLine = strings.Replace(cmdLine, config.OutFilePlaceHolder, outputFile, 1)
+	cmdLine := strings.Replace(config.ConvertCommandLine, config.SplitCommandInFileToken, inputFile, 1)
+	cmdLine = strings.Replace(cmdLine, config.SplitCommandOutFileToken, outputFile, 1)
 
 	// build the parameter structure
 	params := strings.Split(cmdLine, " ")
@@ -77,6 +78,7 @@ func convertFile(workerId int, config ServiceConfig, inputFile string, outputFil
 		if len(output) != 0 {
 			log.Printf("[worker %d] ERROR: conversion output [%s]", workerId, output)
 		}
+
 		// remove the input and output files and ignore any errors
 		//_ = os.Remove(inputFile)
 		//_ = os.Remove(outputFile)

@@ -58,15 +58,14 @@ func generateImageFilenames(workerId int, config ServiceConfig, downloadName str
 	downloadFileExt := path.Ext(downloadBaseName)
 	downloadBaseNoExt := strings.TrimSuffix(downloadBaseName, downloadFileExt)
 
-	// this is a special case where we remove a leading character from the identifier to make the partitioned directory name
-	id := downloadBaseNoExt
-	if config.PartitionOutputDir == true && isLetter(id[0]) == true {
-		id = id[1:]
-	}
-
 	// generate new components
 	convertName := fmt.Sprintf("%s/%s.%s", inputDirName, inputBaseNoExt, config.ConvertSuffix)
-	outputName := fmt.Sprintf("%s/%s/%s.%s", config.ImageOutputRoot, outputDirName(workerId, config, id), inputBaseNoExt, config.ConvertSuffix)
+	outputName := fmt.Sprintf("%s/%s.%s", outputDirName(workerId, config, downloadBaseNoExt), inputBaseNoExt, config.ConvertSuffix)
+	if len(config.OutputFSRoot) != 0 {
+		outputName = fmt.Sprintf("%s/%s", config.OutputFSRoot, outputName)
+	}
+
+	log.Printf("[worker %d] DEBUG: convert name [%s], output name [%s]", workerId, convertName, outputName)
 	return convertName, outputName
 }
 
@@ -94,6 +93,11 @@ func outputDirName(workerId int, config ServiceConfig, id string) string {
 	// if we are not partitioning the output directory, just return the ID
 	if config.PartitionOutputDir == false {
 		return id
+	}
+
+	// this is a special case where we remove a leading character from the identifier to make the partitioned directory name
+	if isLetter(id[0]) == true {
+		id = id[1:]
 	}
 
 	dirName := ""

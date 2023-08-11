@@ -9,31 +9,30 @@ import (
 // ServiceConfig defines all of the service configuration parameters
 type ServiceConfig struct {
 
-	// basic configuration
-	InQueueName        string // SQS queue name for inbound documents
-	PollTimeOut        int64  // the SQS queue timeout (in seconds)
-	LocalWorkDir       string // the local work directory
-	WorkerQueueSize    int    // the inbound message queue size to feed the workers
-	Workers            int    // the number of worker processes
-	DeleteAfterProcess bool   // delete the bucket object after processing
-	FailOnOverwrite    bool   // fail if the converted file will overwrite an existing one
+	// service configuration
+	InQueueName     string // SQS queue name for inbound documents
+	PollTimeOut     int64  // the SQS queue timeout (in seconds)
+	LocalWorkDir    string // the local work directory
+	WorkerQueueSize int    // the inbound message queue size to feed the workers
+	Workers         int    // the number of worker processes
 
-	// command line placeholders
-	InFilePlaceHolder  string // the placeholder token for the input file
-	OutFilePlaceHolder string // the placeholder token for the output file
+	// splitting configuration
+	SplitBinary              string // the file split binary
+	SplitSuffix              string // the suffix of split files
+	SplitCommandLine         string // the split commandline
+	SplitCommandInFileToken  string // the placeholder token for the input file
+	SplitCommandOutFileToken string // the placeholder token for the output file
 
-	// image splitting support
-	SplitBinary      string // the file split binary
-	SplitSuffix      string // the suffix of split files
-	SplitCommandLine string // the split commandline
-
-	// image conversion support
+	// conversion configuration
 	ConvertBinary      string // the conversion binary
 	ConvertSuffix      string // the suffix of converted files
 	ConvertCommandLine string // the conversion commandline
+	DeleteSource       bool   // delete the bucket object after processing
 
 	// output location support
-	ImageOutputRoot    string // the converted image output directory
+	OutputFSRoot       string // the converted image output directory
+	OutputBucket       string // the output bucket
+	OutputBucketRoot   string // the output bucket root
 	PartitionOutputDir bool   // do we 'partition' output directory by id (ab/cd/ef/file(s)...) or not (abcdef/file(s)...)
 
 	// iiif image manifest support
@@ -108,31 +107,30 @@ func LoadConfiguration() *ServiceConfig {
 
 	var cfg ServiceConfig
 
-	// basic configuration
+	// service configuration
 	cfg.InQueueName = ensureSetAndNonEmpty("IIIF_INGEST_IN_QUEUE")
 	cfg.PollTimeOut = int64(envToInt("IIIF_INGEST_QUEUE_POLL_TIMEOUT"))
 	cfg.LocalWorkDir = ensureSetAndNonEmpty("IIIF_INGEST_WORK_DIR")
 	cfg.WorkerQueueSize = envToInt("IIIF_INGEST_WORK_QUEUE_SIZE")
 	cfg.Workers = envToInt("IIIF_INGEST_WORKERS")
-	cfg.DeleteAfterProcess = envToBoolean("IIIF_INGEST_DELETE_AFTER_PROCESS")
-	cfg.FailOnOverwrite = envToBoolean("IIIF_INGEST_FAIL_ON_OVERWRITE")
 
-	// command line placeholder support
-	cfg.InFilePlaceHolder = ensureSetAndNonEmpty("IIIF_INGEST_INFILE_PLACEHOLDER")
-	cfg.OutFilePlaceHolder = ensureSetAndNonEmpty("IIIF_INGEST_OUTFILE_PLACEHOLDER")
-
-	// image splitting support
+	// splitting configuration
 	cfg.SplitBinary = envWithDefault("IIIF_INGEST_SPLIT_BIN", "")
 	cfg.SplitSuffix = envWithDefault("IIIF_INGEST_SPLIT_SUFFIX", "")
 	cfg.SplitCommandLine = envWithDefault("IIIF_INGEST_SPLIT_CMD", "")
+	cfg.SplitCommandInFileToken = ensureSetAndNonEmpty("IIIF_INGEST_SPLIT_CMD_INFILE_TOKEN")
+	cfg.SplitCommandOutFileToken = ensureSetAndNonEmpty("IIIF_INGEST_SPLIT_CMD_OUTFILE_TOKEN")
 
-	// image conversion support
+	// conversion configuration
 	cfg.ConvertBinary = ensureSetAndNonEmpty("IIIF_INGEST_CONVERT_BIN")
 	cfg.ConvertSuffix = ensureSetAndNonEmpty("IIIF_INGEST_CONVERT_SUFFIX")
 	cfg.ConvertCommandLine = ensureSetAndNonEmpty("IIIF_INGEST_CONVERT_CMD")
+	cfg.DeleteSource = envToBoolean("IIIF_INGEST_DELETE_SOURCE")
 
-	// output location support
-	cfg.ImageOutputRoot = ensureSetAndNonEmpty("IIIF_INGEST_IMAGE_OUTPUT_ROOT")
+	// output configuration
+	cfg.OutputFSRoot = envWithDefault("IIIF_INGEST_OUTPUT_FS_ROOT", "")
+	cfg.OutputBucket = envWithDefault("IIIF_INGEST_OUTPUT_BUCKET", "")
+	cfg.OutputBucketRoot = envWithDefault("IIIF_INGEST_OUTPUT_BUCKET_ROOT", "")
 	cfg.PartitionOutputDir = envToBoolean("IIIF_INGEST_PARTITION_OUTPUT_DIR")
 
 	// iiif image manifest support
@@ -151,31 +149,30 @@ func LoadConfiguration() *ServiceConfig {
 	// static metadata support
 	cfg.ManifestMetadataCopyrightText = envWithDefault("IIIF_INGEST_METADATA_COPYRIGHT_NOTE", "")
 
-	// basic configuration
+	// service configuration
 	log.Printf("[CONFIG] InQueueName                   = [%s]", cfg.InQueueName)
 	log.Printf("[CONFIG] PollTimeOut                   = [%d]", cfg.PollTimeOut)
 	log.Printf("[CONFIG] LocalWorkDir                  = [%s]", cfg.LocalWorkDir)
 	log.Printf("[CONFIG] WorkerQueueSize               = [%d]", cfg.WorkerQueueSize)
 	log.Printf("[CONFIG] Workers                       = [%d]", cfg.Workers)
-	log.Printf("[CONFIG] DeleteAfterProcess            = [%t]", cfg.DeleteAfterProcess)
-	log.Printf("[CONFIG] FailOnOverwrite               = [%t]", cfg.FailOnOverwrite)
 
-	// command line placeholder support
-	log.Printf("[CONFIG] InFilePlaceHolder             = [%s]", cfg.InFilePlaceHolder)
-	log.Printf("[CONFIG] OutFilePlaceHolder            = [%s]", cfg.OutFilePlaceHolder)
-
-	// image splitting support
+	// splitting configuration
 	log.Printf("[CONFIG] SplitBinary                   = [%s]", cfg.SplitBinary)
 	log.Printf("[CONFIG] SplitSuffix                   = [%s]", cfg.SplitSuffix)
 	log.Printf("[CONFIG] SplitCommandLine              = [%s]", cfg.SplitCommandLine)
+	log.Printf("[CONFIG] SplitCommandInFileToken       = [%s]", cfg.SplitCommandInFileToken)
+	log.Printf("[CONFIG] SplitCommandOutFileToken      = [%s]", cfg.SplitCommandOutFileToken)
 
-	// image conversion support
+	// conversion configuration
 	log.Printf("[CONFIG] ConvertBinary                 = [%s]", cfg.ConvertBinary)
 	log.Printf("[CONFIG] ConvertSuffix                 = [%s]", cfg.ConvertSuffix)
 	log.Printf("[CONFIG] ConvertCommandLine            = [%s]", cfg.ConvertCommandLine)
+	log.Printf("[CONFIG] DeleteSource                  = [%t]", cfg.DeleteSource)
 
 	// output location support
-	log.Printf("[CONFIG] ImageOutputRoot               = [%s]", cfg.ImageOutputRoot)
+	log.Printf("[CONFIG] OutputFSRoot                  = [%s]", cfg.OutputFSRoot)
+	log.Printf("[CONFIG] OutputBucket                  = [%s]", cfg.OutputBucket)
+	log.Printf("[CONFIG] OutputBucketRoot              = [%s]", cfg.OutputBucketRoot)
 	log.Printf("[CONFIG] PartitionOutputDir            = [%t]", cfg.PartitionOutputDir)
 
 	// iiif image manifest support
@@ -191,11 +188,23 @@ func LoadConfiguration() *ServiceConfig {
 	log.Printf("[CONFIG] ManifestMetadataQueryTimeout  = [%d]", cfg.ManifestMetadataQueryTimeout)
 
 	// static metadata support
-	log.Printf("[CONFIG] ManifestMetadataCopyrightText = [%d]", cfg.ManifestMetadataCopyrightText)
+	log.Printf("[CONFIG] ManifestMetadataCopyrightText = [%s]", cfg.ManifestMetadataCopyrightText)
+
+	// validate output target values
+	if len(cfg.OutputFSRoot) == 0 && len(cfg.OutputBucket) == 0 {
+		log.Printf("[main] ERROR: must specify output root (IIIF_INGEST_OUTPUT_ROOT) or output bucket (IIIF_INGEST_OUTPUT_BUCKET)")
+		os.Exit(1)
+	}
+
+	if len(cfg.OutputFSRoot) != 0 && len(cfg.OutputBucket) != 0 {
+		log.Printf("[main] ERROR: cannot specify output root (IIIF_INGEST_OUTPUT_ROOT) and output bucket (IIIF_INGEST_OUTPUT_BUCKET)")
+		os.Exit(1)
+	}
 
 	// validate the config if we have splitting behavior
 	if len(cfg.SplitBinary) != 0 {
-		if len(cfg.SplitSuffix) == 0 || len(cfg.SplitCommandLine) == 0 {
+		if len(cfg.SplitSuffix) == 0 || len(cfg.SplitCommandLine) == 0 ||
+			len(cfg.SplitCommandInFileToken) == 0 || len(cfg.SplitCommandOutFileToken) == 0 {
 			log.Printf("[main] ERROR: split configuration incomplete")
 			os.Exit(1)
 		}

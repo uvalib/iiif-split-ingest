@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -68,28 +69,36 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 			// generate all the needed file names
 			convertedName, targetName := generateImageFilenames(workerId, config, downloadedName, inputName)
 
-			// if we should fail when a converted file already exists
-			if config.FailOnOverwrite == true && fileExists(targetName) {
-				log.Printf("[worker %d] ERROR: %s already exists", workerId, targetName)
-				break
-			}
-
 			// convert the file
 			err = convertFile(workerId, config, inputName, convertedName)
 			if err != nil {
 				break
 			}
 
-			// create the target directory tree
-			err = createDir(workerId, path.Dir(targetName))
-			if err != nil {
-				break
-			}
+			// if we are outputting to a local filesystem
+			if len(config.OutputFSRoot) != 0 {
+				// create the target directory tree
+				err = createDir(workerId, path.Dir(targetName))
+				if err != nil {
+					break
+				}
 
-			// copy the file to the correct location
-			err = copyFile(workerId, convertedName, targetName)
-			if err != nil {
-				break
+				// copy the file to the correct location
+				err = copyFile(workerId, convertedName, targetName)
+				if err != nil {
+					break
+				}
+			} else {
+				// do we have a bucket root defined
+				f := targetName
+				if len(config.OutputBucketRoot) != 0 {
+					f = fmt.Sprintf("%s/%s", config.OutputBucketRoot, f)
+				}
+				o := uva_s3.NewUvaS3Object(config.OutputBucket, f)
+				err := s3Svc.PutFromFile(o, convertedName)
+				if err != nil {
+					break
+				}
 			}
 
 			// and save the output file in case we need to make a manifest
@@ -109,7 +118,7 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 			}
 
 			// should we delete the bucket contents
-			if config.DeleteAfterProcess == true {
+			if config.DeleteSource == true {
 				_ = deleteS3File(workerId, s3Svc, notify.SourceBucket, notify.BucketKey)
 			}
 
