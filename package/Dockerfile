@@ -12,16 +12,19 @@ RUN make linux
 #
 # build the target container
 #
-FROM public.ecr.aws/docker/library/debian:bookworm-slim
+FROM public.ecr.aws/docker/library/alpine:3.18
 
 # update the packages
-RUN apt-get -y update && apt-get -y upgrade && apt-get -y install procps htop ca-certificates imagemagick exiftool
+RUN apk update && apk upgrade && apk add bash tzdata ca-certificates curl exiftool && rm -rf /var/cache/apk/*
 
-# disable imagemagick policies
-RUN rm -f /etc/ImageMagick*/policy.xml
+# image magick support
+RUN apk add fftw-double-libs fontconfig freetype ghostscript ghostscript-fonts lcms2 libbz2 libgcc libgomp libheif libjxl libltdl libraw libx11 libxext libxml2 openjpeg pango tiff zlib
+COPY distro/bin/magick /usr/local/bin
+COPY distro/etc/ /usr/local/etc
+RUN ln -s /usr/local/bin/magick /usr/local/bin/convert
 
 # Create the run user and group
-RUN groupadd -g 18570 docker && useradd -u 1984 -g docker docker
+RUN addgroup --gid 18570 docker && adduser --uid 1984 docker -G docker -D
 
 # set the timezone appropriatly
 ENV TZ=UTC
