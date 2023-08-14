@@ -106,10 +106,6 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 			}
 		}
 
-		// cleanup the work directory (does not matter if we failed or not)
-		log.Printf("[worker %d] DEBUG: cleaning up %s", workerId, workDir)
-		_ = os.RemoveAll(workDir)
-
 		// if everything went well
 		if err == nil {
 
@@ -132,6 +128,10 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 			// delete the inbound message
 			_ = deleteMessage(workerId, sqsSvc, queue, notify.ReceiptHandle)
 		}
+
+		// cleanup the work directory (does not matter if we failed or not)
+		log.Printf("[worker %d] DEBUG: cleaning up %s", workerId, workDir)
+		_ = os.RemoveAll(workDir)
 
 		duration := time.Since(start)
 		log.Printf("[worker %d] INFO: processing %s/%s complete in %0.2f seconds",
