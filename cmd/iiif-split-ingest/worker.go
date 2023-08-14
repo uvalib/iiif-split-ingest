@@ -114,7 +114,13 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 
 			// should we create a manifest for the processed file(s)
 			if len(config.ManifestTemplateName) != 0 {
-				_ = createManifest(workerId, config, downloadedName, targetFiles)
+				log.Printf("[worker %d] DEBUG: creating manifest", workerId)
+				e := createManifest(workerId, config, downloadedName, targetFiles)
+				if e != nil {
+					log.Printf("[worker %d] ERROR: creating manifest (%s)", workerId, err.Error())
+				}
+			} else {
+				log.Printf("[worker %d] DEBUG: no manifest required", workerId)
 			}
 
 			// should we delete the bucket contents
@@ -158,45 +164,6 @@ func deleteMessage(workerId int, aws awssqs.AWS_SQS, queue awssqs.QueueHandle, r
 	// basically everything OK
 	return nil
 }
-
-// validate the input file name
-//
-// the rules for validation are as follows:
-// - if contains 2 path components
-// - and second path component is "archive":
-//   - filename must match regex \d{4,7}
-// otherwise
-//   - filename can be anything
-//func validateInputName(workerId int, inputName string) error {
-//
-//	log.Printf("[worker %d] DEBUG: validating input name %s", workerId, inputName)
-//
-//	// split into path and filename components
-//	dirName := path.Dir(inputName)
-//	fileName := path.Base(inputName)
-//
-//	// ensure we have 2 path components
-//	dirs := strings.Split(dirName, "/")
-//	if len(dirs) != 2 {
-//		return fmt.Errorf("incorrect path specification for input file (must be 2 deep)")
-//	}
-//
-//	// if we have specific filename validation rules
-//	if dirs[1] == archivesName {
-//		fileExt := path.Ext(fileName)
-//		noSuffix := strings.TrimSuffix(fileName, fileExt)
-//		matched, err := regexp.MatchString("//c\\d{4,7}$", noSuffix)
-//		if err != nil {
-//			return err
-//		}
-//		if matched == false {
-//			return fmt.Errorf("%s filename is invalid; must match regex //c\\d{4,7}$", archivesName)
-//		}
-//	}
-//
-//	// all is well
-//	return nil
-//}
 
 //
 // end of file

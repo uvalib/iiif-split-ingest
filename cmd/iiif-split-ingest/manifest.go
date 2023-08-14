@@ -117,6 +117,7 @@ func createPageAttributes(workerId int, config ServiceConfig, convertedFiles []s
 			pages[ix].Format, _ = infos[0].GetString("MIMEType")
 			//log.Printf("DEBUG: %s/%s (w %s, h %s, f %s)", pages[ix].Id, pages[ix].Filename, pages[ix].Width, pages[ix].Height, pages[ix].Format)
 		} else {
+			log.Printf("ERROR: extracting metadata (%s)", infos[0].Err)
 			return nil, infos[0].Err
 		}
 	}
