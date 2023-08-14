@@ -88,6 +88,8 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 				if err != nil {
 					break
 				}
+				// and save the output file in case we need to make a manifest
+				targetFiles = append(targetFiles, targetName)
 			} else {
 				// do we have a bucket root defined
 				f := targetName
@@ -99,10 +101,9 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 				if err != nil {
 					break
 				}
+				// and save the output file in case we need to make a manifest
+				targetFiles = append(targetFiles, convertedName)
 			}
-
-			// and save the output file in case we need to make a manifest
-			targetFiles = append(targetFiles, targetName)
 		}
 
 		// cleanup the work directory (does not matter if we failed or not)
@@ -117,7 +118,7 @@ func worker(workerId int, config ServiceConfig, sqsSvc awssqs.AWS_SQS, s3Svc uva
 				log.Printf("[worker %d] DEBUG: creating manifest", workerId)
 				e := createManifest(workerId, config, downloadedName, targetFiles)
 				if e != nil {
-					log.Printf("[worker %d] ERROR: creating manifest (%s)", workerId, err.Error())
+					log.Printf("[worker %d] ERROR: creating manifest (%s)", workerId, e.Error())
 				}
 			} else {
 				log.Printf("[worker %d] DEBUG: no manifest required", workerId)
